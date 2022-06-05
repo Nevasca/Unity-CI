@@ -2,19 +2,17 @@ name: Game Actions 🎮
 
 env:
   project_name: UnityCI
+  unity_version: 2021.3.1f1
 
-on: 
-  # Triggers the workflow on push or pull but only for the "main" branch
+on:   
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-    
-  # Allows to run manually from the Actions tab
+      
   workflow_dispatch:
 
-jobs:
-  # Test Job
+jobs:  
   testAllModes:
     name: Test in ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -24,12 +22,10 @@ jobs:
         testMode:
           - Playmode
           - Editmode
-    steps:
-      # Checkout (without LFS)
+    steps:      
       - name: Checkout repository
-        uses: actions/checkout@v2
-
-      # Git LFS
+        uses: actions/checkout@v2        
+      
       - name: Create LFS file list
         run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
 
@@ -45,18 +41,18 @@ jobs:
           git lfs pull
           git add .
           git reset --hard
-
-      # Cache
-      - uses: actions/cache@v2
+      
+      - name: Cache Library folder
+        uses: actions/cache@v2
         with:
           path: ${{ matrix.projectPath }}/Library
           key: Library-${{ matrix.projectPath }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-
             Library-
-
-      # Test      
-      - uses: game-ci/unity-test-runner@v2
+      
+      - name: Run test
+        uses: game-ci/unity-test-runner@v2
         id: tests
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -68,8 +64,8 @@ jobs:
           checkName: ${{ matrix.testMode }} Test Results
           # coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+my.assembly.*'
       
-      # Upload test results artifact
-      - uses: actions/upload-artifact@v2
+      - name: Upload test artifact
+        uses: actions/upload-artifact@v2
         if: always()
         with:
           name: Test results for ${{ matrix.testMode }}
@@ -79,8 +75,7 @@ jobs:
       #  with:
       #    name: Coverage results for ${{ matrix.testMode }}
       #    path: ${{ steps.tests.outputs.coveragePath }}
-  
-  # Build Job 
+    
   buildForAllSupportedPlatforms:
     needs: testAllModes
     name: Build for ${{ matrix.targetPlatform }}
@@ -88,10 +83,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        unityVersion: 
-          - 2021.3.1f1
         targetPlatform:
-          # - StandaloneOSX # Build a macOS standalone (Intel 64-bit).
+          - StandaloneOSX # Build a macOS standalone (Intel 64-bit).
           - StandaloneWindows # Build a Windows standalone.
           - StandaloneWindows64 # Build a Windows 64-bit standalone.
           - StandaloneLinux64 # Build a Linux 64-bit standalone.
@@ -100,12 +93,12 @@ jobs:
           - WebGL # WebGL.
     outputs:
       buildVersion: ${{ steps.build.outputs.buildVersion }}      
-    steps:
-      # Checkout (without LFS)
+    steps:      
       - name: Checkout repository
         uses: actions/checkout@v2
-
-      # Git LFS
+        with:
+          fetch-depth: 0
+      
       - name: Create LFS file list
         run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
 
@@ -122,28 +115,28 @@ jobs:
           git add .
           git reset --hard
 
-      # Cache
-      - uses: actions/cache@v2
+      - name: Cache Library folder
+        uses: actions/cache@v2
         with:
           path: Library
           key: Library-${{ matrix.targetPlatform }}
           restore-keys: Library-
       
-      # Build
-      - uses: game-ci/unity-builder@v2
+      - name: Run build
+        uses: game-ci/unity-builder@v2
         id: build
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          unityVersion: ${{ matrix.unityVersion }}
+          unityVersion: ${{ env.unity_version }}
           targetPlatform: ${{ matrix.targetPlatform }}
           buildName: ${{ env.project_name }}
           versioning: Semantic
-      
-      # Upload build artifact 
-      - uses: actions/upload-artifact@v2
+            
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.targetPlatform }}
           path: build/${{ matrix.targetPlatform }}
@@ -156,21 +149,21 @@ jobs:
       fail-fast: false
       matrix:        
         targetPlatform:          
-          - StandaloneWindows # Build a Windows standalone.
-          - StandaloneWindows64 # Build a Windows 64-bit standalone.
-          - StandaloneLinux64 # Build a Linux 64-bit standalone.
-          - WebGL # WebGL.
+          - StandaloneWindows
+          - StandaloneWindows64
+          - StandaloneLinux64
+          - WebGL
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         
-      - name: Download Artifact
+      - name: Download artifact
         uses: actions/download-artifact@v2
         with:
           name: ${{ matrix.targetPlatform }}
           path: build/${{ matrix.targetPlatform }}
                   
-      - name: Upload ${{ matrix.targetPlatform }} to itch.io project
+      - name: Upload to itch.io
         uses: robpc/itchio-upload-action@v1
         with:
           path: build/${{ matrix.targetPlatform }}
