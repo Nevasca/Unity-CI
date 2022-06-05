@@ -137,7 +137,7 @@ jobs:
       # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first to decrease final size
       - name: Remove debug folder
         uses: JesseTG/rm@v1.0.2
-        if: matrix.targetPlatform != WebGL # In WebGL it does not generate debug folders
+        if: matrix.targetPlatform != 'WebGL' # In WebGL it does not generate debug folders
         with:
           path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
             
