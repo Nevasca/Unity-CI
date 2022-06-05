@@ -118,19 +118,16 @@ jobs:
       # Cache
       - uses: actions/cache@v2
         with:
-          path: ${{ matrix.projectPath }}/Library
-          key:
-            Library-${{ matrix.projectPath }}-${{ matrix.targetPlatform }}-${{
-            hashFiles(matrix.projectPath) }}
-          restore-keys: |
-            Library-${{ matrix.projectPath }}-${{ matrix.targetPlatform }}-
-            Library-${{ matrix.projectPath }}-
-            Library-
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}
+          restore-keys: Library-
       
       # Build
       - uses: game-ci/unity-builder@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
       
