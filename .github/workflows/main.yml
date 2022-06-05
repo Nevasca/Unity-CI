@@ -85,6 +85,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        unityVersion: 
+          - 2021.3.1f1
         targetPlatform:
           # - StandaloneOSX # Build a macOS standalone (Intel 64-bit).
           - StandaloneWindows # Build a Windows standalone.
@@ -129,6 +131,7 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
+          unityVersion: ${{ matrix.unityVersion }}
           targetPlatform: ${{ matrix.targetPlatform }}
           buildName: UnityCI
       
