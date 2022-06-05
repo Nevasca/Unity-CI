@@ -76,21 +76,81 @@ jobs:
       #    name: Coverage results for ${{ matrix.testMode }}
       #    path: ${{ steps.tests.outputs.coveragePath }}
     
-  buildForAllSupportedPlatforms:
+  buildForLinuxBasedPlatforms:
     needs: testAllModes
-    name: Build for ${{ matrix.targetPlatform }}
+    name: (Linux) Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         targetPlatform:
-          - StandaloneOSX # Build a macOS standalone (Intel 64-bit).
-          - StandaloneWindows # Build a Windows standalone.
-          - StandaloneWindows64 # Build a Windows 64-bit standalone.
-          - StandaloneLinux64 # Build a Linux 64-bit standalone.
-          # - iOS # Build an iOS player.
-          # - Android # Build an Android .apk standalone app.
-          - WebGL # WebGL.
+          - StandaloneLinux64
+          # - iOS
+          # - Android
+          # - WebGL
+    outputs:
+      buildVersion: ${{ steps.build.outputs.buildVersion }}      
+    steps:      
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Git LFS Pull
+        run: |
+          git lfs pull
+          git add .
+          git reset --hard
+
+      - name: Cache Library folder
+        uses: actions/cache@v2
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}
+          restore-keys: Library-
+      
+      - name: Run build
+        uses: game-ci/unity-builder@v2
+        id: build
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ env.unity_version }}
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: ${{ env.project_name }}
+          versioning: Semantic
+            
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}
+          
+  buildForWindowsBasedPlatforms:
+    needs: testAllModes
+    name: (Windows) Build for ${{ matrix.targetPlatform }}
+    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneWindows
+          - StandaloneWindows64
+          - WebGL
+          # - tvOS # Build an AppleTV player.
+          # - WSAPlayer # Build a UWP App.
     outputs:
       buildVersion: ${{ steps.build.outputs.buildVersion }}      
     steps:      
@@ -142,7 +202,7 @@ jobs:
           path: build/${{ matrix.targetPlatform }}
           
   deployToItchio:
-    needs: buildForAllSupportedPlatforms
+    needs: [buildForLinuxBasedPlatforms, buildForWindowsBasedPlatforms]
     name: Deploy to itch.io for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
@@ -169,7 +229,7 @@ jobs:
           path: build/${{ matrix.targetPlatform }}
           project: ${{ secrets.ITCHIO_PROJECT_NAME }}
           channel: ${{ matrix.targetPlatform }}
-          version: v${{ needs.buildForAllSupportedPlatforms.outputs.buildVersion }}
+          version: ${{ needs.buildForLinuxBasedPlatforms.outputs.buildVersion }}
           api-key: ${{ secrets.ITCHIO_API_KEY }}
     
       
