@@ -11,6 +11,7 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Test Job
   testAllModes:
     name: Test in ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -18,8 +19,8 @@ jobs:
       fail-fast: false
       matrix:
         testMode:
-          - playmode
-          - editmode
+          - Playmode
+          - Editmode
     steps:
       # Checkout (without LFS)
       - name: Checkout repository
@@ -48,8 +49,10 @@ jobs:
           path: ${{ matrix.projectPath }}/Library
           key: Library-${{ matrix.projectPath }}
           restore-keys: |
+            Library-${{ matrix.projectPath }}-
             Library-
-            
+
+      # Test      
       - uses: game-ci/unity-test-runner@v2
         id: tests
         env:
@@ -60,22 +63,36 @@ jobs:
           artifactsPath: ${{ matrix.testMode }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.testMode }} Test Results
-          coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+my.assembly.*'
+          # coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+my.assembly.*'
+      
+      # Upload test results artifact
       - uses: actions/upload-artifact@v2
         if: always()
         with:
           name: Test results for ${{ matrix.testMode }}
           path: ${{ steps.tests.outputs.artifactsPath }}
-      - uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: Coverage results for ${{ matrix.testMode }}
-          path: ${{ steps.tests.outputs.coveragePath }}
-
-  build:
+      # - uses: actions/upload-artifact@v2
+      #  if: always()
+      #  with:
+      #    name: Coverage results for ${{ matrix.testMode }}
+      #    path: ${{ steps.tests.outputs.coveragePath }}
+  
+  # Build Job 
+  buildForAllSupportedPlatforms:
     needs: testAllModes
-    name: Build my project ✨
+    name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          # - StandaloneOSX # Build a macOS standalone (Intel 64-bit).
+          - StandaloneWindows # Build a Windows standalone.
+          - StandaloneWindows64 # Build a Windows 64-bit standalone.
+          - StandaloneLinux64 # Build a Linux 64-bit standalone.
+          # - iOS # Build an iOS player.
+          # - Android # Build an Android .apk standalone app.
+          - WebGL # WebGL.
     steps:
       # Checkout (without LFS)
       - name: Checkout repository
@@ -101,31 +118,24 @@ jobs:
       # Cache
       - uses: actions/cache@v2
         with:
-          path: Library
-          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          path: ${{ matrix.projectPath }}/Library
+          key:
+            Library-${{ matrix.projectPath }}-${{ matrix.targetPlatform }}-${{
+            hashFiles(matrix.projectPath) }}
           restore-keys: |
+            Library-${{ matrix.projectPath }}-${{ matrix.targetPlatform }}-
+            Library-${{ matrix.projectPath }}-
             Library-
-
-      # Test
-      - name: Run tests
-        uses: game-ci/unity-test-runner@v2
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        with:
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-
+      
       # Build
-      - name: Build project
-        uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          targetPlatform: WebGL
-
-      # Output
+          targetPlatform: ${{ matrix.targetPlatform }}
+      
+      # Upload build artifact 
       - uses: actions/upload-artifact@v2
         with:
-          name: Build
-          path: build
+          name: Build-${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}
