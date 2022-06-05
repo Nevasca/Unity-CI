@@ -1,5 +1,8 @@
 name: Game Actions 🎮
 
+env:
+  project_name: UnityCI
+
 on: 
   # Triggers the workflow on push or pull but only for the "main" branch
   push:
@@ -126,6 +129,7 @@ jobs:
       
       # Build
       - uses: game-ci/unity-builder@v2
+        id: build
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -133,10 +137,44 @@ jobs:
         with:
           unityVersion: ${{ matrix.unityVersion }}
           targetPlatform: ${{ matrix.targetPlatform }}
-          buildName: UnityCI
+          buildName: ${{ env.project_name }}
+          versioning: Semantic
       
       # Upload build artifact 
       - uses: actions/upload-artifact@v2
         with:
-          name: Build-${{ matrix.targetPlatform }}
+          name: ${{ matrix.targetPlatform }}
           path: build/${{ matrix.targetPlatform }}
+          
+  deployToItchio:
+    needs: buildForAllSupportedPlatforms
+    name: Deploy to itch.io for ${{ matrix.targetPlatform }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:        
+        targetPlatform:          
+          - StandaloneWindows # Build a Windows standalone.
+          - StandaloneWindows64 # Build a Windows 64-bit standalone.
+          - StandaloneLinux64 # Build a Linux 64-bit standalone.
+          - WebGL # WebGL.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Set Version
+        run: |
+          echo "version=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+          
+      - name: Upload ${{ matrix.targetPlatform }} to itch.io project
+        uses: robpc/itchio-upload-action@v1
+        with:
+          path: build/${{ matrix.targetPlatform }}
+          project: ${{ secrets.ITCHIO_PROJECT_NAME }}
+          channel: ${{ matrix.targetPlatform }}
+          version: ${{ env.version }}
+          api-key: ${{ secrets.ITCHIO_API_KEY }}
+    
+      
+        
+    
