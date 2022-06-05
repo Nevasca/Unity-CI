@@ -98,6 +98,8 @@ jobs:
           # - iOS # Build an iOS player.
           # - Android # Build an Android .apk standalone app.
           - WebGL # WebGL.
+    outputs:
+      buildVersion: ${{ steps.build.outputs.buildVersion }}      
     steps:
       # Checkout (without LFS)
       - name: Checkout repository
@@ -162,17 +164,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
         
-      - name: Set Version
-        run: |
-          echo "version=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
-          
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}
+                  
       - name: Upload ${{ matrix.targetPlatform }} to itch.io project
         uses: robpc/itchio-upload-action@v1
         with:
           path: build/${{ matrix.targetPlatform }}
           project: ${{ secrets.ITCHIO_PROJECT_NAME }}
           channel: ${{ matrix.targetPlatform }}
-          version: ${{ env.version }}
+          version: v${{ needs.buildForAllSupportedPlatforms.outputs.buildVersion }}
           api-key: ${{ secrets.ITCHIO_API_KEY }}
     
       
