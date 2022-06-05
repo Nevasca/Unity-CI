@@ -130,6 +130,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: UnityCI
       
       # Upload build artifact 
       - uses: actions/upload-artifact@v2
