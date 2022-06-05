@@ -85,9 +85,9 @@ jobs:
       matrix:
         targetPlatform:
           - StandaloneLinux64
+          - WebGL
           # - iOS
           # - Android
-          - WebGL
     outputs:
       buildVersion: ${{ steps.build.outputs.buildVersion }}      
     steps:      
@@ -230,7 +230,3 @@ jobs:
           channel: ${{ matrix.targetPlatform }}
           version: ${{ needs.buildForLinuxBasedPlatforms.outputs.buildVersion }}
           api-key: ${{ secrets.ITCHIO_API_KEY }}
-    
-      
-        
-    
