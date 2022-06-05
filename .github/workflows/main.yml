@@ -87,7 +87,7 @@ jobs:
           - StandaloneLinux64
           # - iOS
           # - Android
-          # - WebGL
+          - WebGL
     outputs:
       buildVersion: ${{ steps.build.outputs.buildVersion }}      
     steps:      
@@ -147,8 +147,7 @@ jobs:
       matrix:
         targetPlatform:
           - StandaloneWindows
-          - StandaloneWindows64
-          - WebGL
+          - StandaloneWindows64          
           # - tvOS # Build an AppleTV player.
           # - WSAPlayer # Build a UWP App.
     outputs:
