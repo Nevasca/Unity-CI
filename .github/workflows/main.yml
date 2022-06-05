@@ -133,6 +133,13 @@ jobs:
           targetPlatform: ${{ matrix.targetPlatform }}
           buildName: ${{ env.project_name }}
           versioning: Semantic
+  
+      # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first to decrease final size
+      - name: Remove debug folder
+        uses: JesseTG/rm@v1.0.2
+        if: matrix.targetPlatform != WebGL # In WebGL it does not generate debug folders
+        with:
+          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
             
       - name: Upload build artifact
         uses: actions/upload-artifact@v2
@@ -206,48 +213,48 @@ jobs:
 #          path: build/${{ matrix.targetPlatform }}
 
   # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first to decrease final size
-  removeDebugFolders:
-      needs: [buildForLinuxBasedPlatforms]
-      name: Remove debug folders for ${{ matrix.targetPlatform }}
-      runs-on: ubuntu-latest
-      strategy:
-        fail-fast: false
-        matrix:        
-          targetPlatform:          
-            - StandaloneWindows
-            - StandaloneWindows64
-            - StandaloneLinux64 
-            # It does not generate on webgl builds
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v2
-
-        - name: Download artifact
-          uses: actions/download-artifact@v2
-          with:
-            name: ${{ matrix.targetPlatform }}
-            path: build/${{ matrix.targetPlatform }}
+#  removeDebugFolders:
+#      needs: [buildForLinuxBasedPlatforms]
+#      name: Remove debug folders for ${{ matrix.targetPlatform }}
+#      runs-on: ubuntu-latest
+#      strategy:
+#        fail-fast: false
+#        matrix:        
+#          targetPlatform:          
+#            - StandaloneWindows
+#            - StandaloneWindows64
+#            - StandaloneLinux64 
+#            # It does not generate on webgl builds
+#      steps:
+#        - name: Checkout repository
+#          uses: actions/checkout@v2
+#
+#        - name: Download artifact
+#          uses: actions/download-artifact@v2
+#          with:
+#            name: ${{ matrix.targetPlatform }}
+#            path: build/${{ matrix.targetPlatform }}
             
         #- name: Unzip artifact
         #  uses: montudor/action-zip@v1
         #  with:
         #    args: unzip -qq build/${{ matrix.targetPlatform }}.zip -d unzipped/${{ matrix.targetPlatform }}
             
-        - name: Remove debug folder
-          uses: JesseTG/rm@v1.0.2
-          with:
-            path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
+ #       - name: Remove debug folder
+ #         uses: JesseTG/rm@v1.0.2
+ #         with:
+ #           path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
         
         #- name: Zip without debug folder
         #  uses: montudor/action-zip@v1
         #  with:
         #    args: zip -qq -r build/${{ matrix.targetPlatform }}-clean.zip unzipped/${{ matrix.targetPlatform }}
             
-        - name: Upload clean build artifact
-          uses: actions/upload-artifact@v2
-          with:
-            name: ${{ matrix.targetPlatform }}-clean
-            path: build/${{ matrix.targetPlatform }}
+  #      - name: Upload clean build artifact
+  #        uses: actions/upload-artifact@v2
+  #        with:
+  #          name: ${{ matrix.targetPlatform }}-clean
+  #          path: build/${{ matrix.targetPlatform }}
           
             
 #  deployToItchio:
