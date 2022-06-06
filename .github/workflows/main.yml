@@ -132,20 +132,7 @@ jobs:
           unityVersion: ${{ env.unity_version }}
           targetPlatform: ${{ matrix.targetPlatform }}
           buildName: ${{ env.project_name }}
-          versioning: Semantic
-  
-      # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first
-      - name: Remove Burst debug folder
-        uses: JesseTG/rm@v1.0.2
-        if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
-        with:
-          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
-          
-#      - name: Remove IL2CPP debug folder
-#        uses: JesseTG/rm@v1.0.2
-#        if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
-#        with:
-#          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BackUpThisFolder_ButDontShipItWithYourGame
+          versioning: Semantic  
             
       - name: Upload build artifact
         uses: actions/upload-artifact@v2
@@ -211,28 +198,54 @@ jobs:
 #          targetPlatform: ${{ matrix.targetPlatform }}
 #          buildName: ${{ env.project_name }}
 #          versioning: Semantic
-#
-#      # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first
-#      - name: Remove Burst debug folder
-#        uses: JesseTG/rm@v1.0.2
-#        if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
-#        with:
-#          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
-#
-#      - name: Remove IL2CPP debug folder
-#        uses: JesseTG/rm@v1.0.2
-#        if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
-#        with:
-#          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BackUpThisFolder_ButDontShipItWithYourGame
-#            
+#         
 #      - name: Upload build artifact
 #        uses: actions/upload-artifact@v2
 #        with:
 #          name: ${{ matrix.targetPlatform }}
 #          path: build/${{ matrix.targetPlatform }}            
-            
-  deployToItchio:
+  
+  removeDebugFolders:
     needs: [buildForLinuxBasedPlatforms]
+    name: Remove debug folders for ${{ matrix.targetPlatform }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:          
+          - StandaloneWindows
+          - StandaloneWindows64
+          - StandaloneLinux64          
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}
+                  
+       # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first
+      - name: Remove Burst debug folder
+        uses: JesseTG/rm@v1.0.2        
+        with:
+          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
+          
+#      - name: Remove IL2CPP debug folder
+#        uses: JesseTG/rm@v1.0.2
+#        if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
+#        with:
+#          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BackUpThisFolder_ButDontShipItWithYourGame
+
+      - name: Upload final build artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.targetPlatform }}-release
+          path: build/${{ matrix.targetPlatform }}
+  
+  deployToItchio:
+    needs: [buildForLinuxBasedPlatforms, removeDebugFolders]
     name: Deploy to itch.io for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
@@ -256,7 +269,7 @@ jobs:
       - name: Upload to itch.io
         uses: robpc/itchio-upload-action@v1
         with:
-          path: build/${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}-release
           project: ${{ secrets.ITCHIO_PROJECT_NAME }}
           channel: ${{ matrix.targetPlatform }}
           version: ${{ needs.buildForLinuxBasedPlatforms.outputs.buildVersion }}
