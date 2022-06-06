@@ -263,13 +263,13 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v2
         with:
-          name: ${{ matrix.targetPlatform }}
+          name: ${{ matrix.targetPlatform }}-release
           path: build/${{ matrix.targetPlatform }}
                   
       - name: Upload to itch.io
         uses: robpc/itchio-upload-action@v1
         with:
-          path: build/${{ matrix.targetPlatform }}-release
+          path: build/${{ matrix.targetPlatform }}
           project: ${{ secrets.ITCHIO_PROJECT_NAME }}
           channel: ${{ matrix.targetPlatform }}
           version: ${{ needs.buildForLinuxBasedPlatforms.outputs.buildVersion }}
