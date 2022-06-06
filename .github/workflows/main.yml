@@ -135,11 +135,17 @@ jobs:
           versioning: Semantic
   
       # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first
-      - name: Remove debug folder
+      - name: Remove Burst debug folder
         uses: JesseTG/rm@v1.0.2
         if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
         with:
           path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
+          
+#      - name: Remove IL2CPP debug folder
+#        uses: JesseTG/rm@v1.0.2
+#        if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
+#        with:
+#          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BackUpThisFolder_ButDontShipItWithYourGame
             
       - name: Upload build artifact
         uses: actions/upload-artifact@v2
@@ -206,12 +212,18 @@ jobs:
 #          buildName: ${{ env.project_name }}
 #          versioning: Semantic
 #
-#        # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first
-#        - name: Remove debug folder
-#          uses: JesseTG/rm@v1.0.2
-#          if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
-#          with:
-#            path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
+#      # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first
+#      - name: Remove Burst debug folder
+#        uses: JesseTG/rm@v1.0.2
+#        if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
+#        with:
+#          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
+#
+#      - name: Remove IL2CPP debug folder
+#        uses: JesseTG/rm@v1.0.2
+#        if: matrix.targetPlatform != 'WebGL' # WebGL builds do not generate debug folders
+#        with:
+#          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BackUpThisFolder_ButDontShipItWithYourGame
 #            
 #      - name: Upload build artifact
 #        uses: actions/upload-artifact@v2
