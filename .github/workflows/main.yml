@@ -14,8 +14,7 @@ on:
 
 jobs:  
   testAllModes:
-    name: Test in ${{ matrix.testMode }}
-    if: 2 > 3
+    name: Test in ${{ matrix.testMode }}    
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -78,7 +77,7 @@ jobs:
       #    path: ${{ steps.tests.outputs.coveragePath }}
     
   buildForLinuxBasedPlatforms:
-    #needs: testAllModes
+    needs: testAllModes
     name: (Linux) Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
@@ -86,7 +85,7 @@ jobs:
       matrix:
         targetPlatform:
           - StandaloneLinux64
-          #- WebGL
+          - WebGL
           - StandaloneWindows
           - StandaloneWindows64
           # - iOS
@@ -133,13 +132,7 @@ jobs:
           unityVersion: ${{ env.unity_version }}
           targetPlatform: ${{ matrix.targetPlatform }}
           buildName: ${{ env.project_name }}
-          versioning: Semantic
-          
-      - name: Remove Burst debug folder
-        run: rm -rf build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
-        
-#      - name: Remove IL2CPP debug folder
-#        run: rm -rf build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BackUpThisFolder_ButDontShipItWithYourGame
+          versioning: Semantic          
             
       - name: Upload build artifact
         uses: actions/upload-artifact@v2
@@ -214,8 +207,7 @@ jobs:
   
   removeDebugFolders:
     needs: [buildForLinuxBasedPlatforms]
-    name: Remove debug folders for ${{ matrix.targetPlatform }}
-    if: 2 > 3
+    name: Remove debug folders for ${{ matrix.targetPlatform }}    
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -235,12 +227,10 @@ jobs:
           path: build/${{ matrix.targetPlatform }}
                   
        # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first
-      #- name: Remove Burst debug folder
-      #  uses: JesseTG/rm@v1.0.2        
-      #  with:
-      #    path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
       - name: Remove Burst debug folder
-        run: rm -rf build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
+        uses: JesseTG/rm@v1.0.2        
+        with:
+          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
           
 #      - name: Remove IL2CPP debug folder
 #        uses: JesseTG/rm@v1.0.2
@@ -252,10 +242,14 @@ jobs:
         with:
           name: ${{ matrix.targetPlatform }}-release
           path: build/${{ matrix.targetPlatform }}
+          
+      - name: Delete old build artifact
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: ${{ matrix.targetPlatform }}
   
   deployToItchio:
-    needs: [buildForLinuxBasedPlatforms, removeDebugFolders]
-    if: 2 > 3
+    needs: [buildForLinuxBasedPlatforms, removeDebugFolders]    
     name: Deploy to itch.io for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
