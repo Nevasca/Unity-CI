@@ -133,7 +133,13 @@ jobs:
           unityVersion: ${{ env.unity_version }}
           targetPlatform: ${{ matrix.targetPlatform }}
           buildName: ${{ env.project_name }}
-          versioning: Semantic  
+          versioning: Semantic
+          
+      - name: Remove Burst debug folder
+        run: rm -rf build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
+        
+#      - name: Remove IL2CPP debug folder
+#        run: rm -rf build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BackUpThisFolder_ButDontShipItWithYourGame
             
       - name: Upload build artifact
         uses: actions/upload-artifact@v2
@@ -209,6 +215,7 @@ jobs:
   removeDebugFolders:
     needs: [buildForLinuxBasedPlatforms]
     name: Remove debug folders for ${{ matrix.targetPlatform }}
+    if: 2 > 3
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
