@@ -15,6 +15,7 @@ on:
 jobs:  
   testAllModes:
     name: Test in ${{ matrix.testMode }}
+    if: 2 > 3
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -77,7 +78,7 @@ jobs:
       #    path: ${{ steps.tests.outputs.coveragePath }}
     
   buildForLinuxBasedPlatforms:
-    needs: testAllModes
+    #needs: testAllModes
     name: (Linux) Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
@@ -85,7 +86,7 @@ jobs:
       matrix:
         targetPlatform:
           - StandaloneLinux64
-          - WebGL
+          #- WebGL
           - StandaloneWindows
           - StandaloneWindows64
           # - iOS
@@ -227,10 +228,12 @@ jobs:
           path: build/${{ matrix.targetPlatform }}
                   
        # Newer Unity versions generate debug folders that should not be shipped, thanks to that, we need to remove it first
+      #- name: Remove Burst debug folder
+      #  uses: JesseTG/rm@v1.0.2        
+      #  with:
+      #    path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
       - name: Remove Burst debug folder
-        uses: JesseTG/rm@v1.0.2        
-        with:
-          path: build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
+        run: rm -rf build/${{ matrix.targetPlatform }}/${{ env.project_name }}_BurstDebugInformation_DoNotShip
           
 #      - name: Remove IL2CPP debug folder
 #        uses: JesseTG/rm@v1.0.2
@@ -245,6 +248,7 @@ jobs:
   
   deployToItchio:
     needs: [buildForLinuxBasedPlatforms, removeDebugFolders]
+    if: 2 > 3
     name: Deploy to itch.io for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
